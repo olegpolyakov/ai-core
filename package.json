@@ -1,0 +1,38 @@
+{
+    "name": "@olegpolyakov/ai-core",
+    "version": "0.1.0",
+    "description": "",
+    "author": "Oleg Poliakov <olegpoliakov@outlook.com>",
+    "type": "module",
+    "exports": {
+        ".": "./src/index.ts",
+        "./clients": "./src/clients/index.ts",
+        "./clients/*": "./src/clients/*.ts"
+    },
+    "scripts": {
+        "lint": "eslint ./src",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "preversion": "npm install --workspaces=false && git add package-lock.json"
+    },
+    "dependencies": {
+        "@anthropic-ai/sdk": "^0.127.0",
+        "@modelcontextprotocol/node": "^2.1.2",
+        "@modelcontextprotocol/server": "^2.4.0",
+        "@olegpolyakov/core": "^0.11.0",
+        "ollama": "^0.6.0",
+        "openai": "^7.10.0"
+    },
+    "devDependencies": {
+        "eslint": "^10.4.0",
+        "typescript": "^5.9.0",
+        "vitest": "^4.0.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/olegpolyakov/tasks-core.git"
+    },
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com"
+    }
+}

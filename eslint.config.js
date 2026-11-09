@@ -1,0 +1,1 @@
+export { default } from '@olegpolyakov/core/eslintconfig';
