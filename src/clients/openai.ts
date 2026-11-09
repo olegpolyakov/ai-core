@@ -7,7 +7,6 @@ import {
     ClientOptions,
     getErrorMessage,
     Message,
-    RespondOptions,
     Response, 
     Tool
 } from '../lib';
@@ -17,11 +16,9 @@ export default class OpenAIClient extends AIClient {
 
     constructor({
         apiKey,
-        baseURL,
-        tools,
-        model = ''
+        baseURL
     }: ClientOptions) {
-        super(model, tools);
+        super();
         this._client = new OpenAI({ apiKey, baseURL });
     }
 
@@ -31,13 +28,9 @@ export default class OpenAIClient extends AIClient {
         return res.data;
     }
 
-    async respond(messages: Message[], { model = this._model, tools }: RespondOptions = {}): Promise<Response> {
-        return this.loop(messages, model, tools);
-    }
-
     async loop(
-        messages: Message[],
         model: string,
+        messages: Message[],
         tools: Tool[] = []
     ): Promise<Response> {
         const input = messages.map(message => ({
@@ -66,17 +59,15 @@ export default class OpenAIClient extends AIClient {
                 })
         }));
 
-        this.tools = tools;
-
-        const _tools = tools.map(({ definition }) => ({
+        const openAITools: OpenAI.Responses.Tool[] = tools.map(t => ({
             type: 'function' as const,
-            name: definition.name,
-            description: definition.description,
-            parameters: toStrictSchema(definition.parameters),
+            name: t.name,
+            description: t.description,
+            parameters: toStrictSchema(t.inputSchema),
             strict: true
-        }) as OpenAI.Responses.Tool);
+        }));
     
-        return this._loop(model, input, _tools);
+        return this._loop(model, input, openAITools);
     }
 
     private async _loop(

@@ -15,8 +15,7 @@ describe('OpenAIClient', () => {
         vi.resetAllMocks();
         client = new OpenAIClient({
             apiKey: 'test-api-key',
-            baseURL: 'https://api.example.test',
-            model: 'default-model'
+            baseURL: 'https://api.example.test'
         });
     });
 
@@ -62,7 +61,7 @@ describe('OpenAIClient', () => {
             }
         ];
 
-        const response = await client.respond(messages);
+        const response = await client.respond(messages, { model: 'default-model' });
 
         expect(response).toEqual({
             message: { role: 'assistant', content: 'Done' }

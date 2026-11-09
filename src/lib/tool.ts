@@ -9,7 +9,7 @@ export class Tool {
         public name: string,
         public description: string = '',
         public inputSchema: JsonSchema,
-        protected fn: (args: Record<string, unknown>) => Promise<CallToolResult>
+        protected fn: (args: unknown) => Promise<CallToolResult>
     ) {}
 
     get definition(): ToolDefinition {
@@ -20,7 +20,7 @@ export class Tool {
         };
     }
 
-    call(args: Record<string, unknown>): Promise<CallToolResult> {
+    call(args: unknown): Promise<CallToolResult> {
         return this.fn(args);
     }
 }

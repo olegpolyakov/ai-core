@@ -21,10 +21,8 @@ const adapters = [
         name: 'Anthropic',
         models: anthropicMock.models,
         request: anthropicMock.create,
-        createClient: (tools?: Tool[]): AIClient => new AnthropicClient({
-            apiKey: 'test-key',
-            model: 'configured-model',
-            tools
+        createClient: (): AIClient => new AnthropicClient({
+            apiKey: 'test-key'
         }),
         setFinalResponse: () => anthropicMock.create.mockResolvedValue({
             content: [{ type: 'text', text: 'Contract response' }]
@@ -47,10 +45,8 @@ const adapters = [
         name: 'Ollama',
         models: ollamaMock.models,
         request: ollamaMock.chat,
-        createClient: (tools?: Tool[]): AIClient => new OllamaClient({
-            apiKey: 'test-key',
-            model: 'configured-model',
-            tools
+        createClient: (): AIClient => new OllamaClient({
+            apiKey: 'test-key'
         }),
         setFinalResponse: () => ollamaMock.chat.mockResolvedValue({
             message: { role: 'assistant', content: 'Contract response' }
@@ -77,10 +73,8 @@ const adapters = [
         name: 'OpenAI',
         models: openaiMock.models,
         request: openaiMock.create,
-        createClient: (tools?: Tool[]): AIClient => new OpenAIClient({
+        createClient: (): AIClient => new OpenAIClient({
             apiKey: 'test-key',
-            model: 'configured-model',
-            tools
         }),
         setFinalResponse: () => openaiMock.create.mockResolvedValue({
             output: [{ type: 'message' }],
@@ -153,9 +147,9 @@ describe.each(adapters)('$name client', adapter => {
             { type: 'object', properties: {}, required: [] },
             toolCall
         );
-        const client = adapter.createClient([tool]);
+        const client = adapter.createClient();
 
-        const response = await client.respond(messages, { model: 'contract-model' });
+        const response = await client.respond(messages, { model: 'contract-model', tools: [tool] });
 
         expect(response).toEqual({
             message: { role: 'assistant', content: 'Tool response' }

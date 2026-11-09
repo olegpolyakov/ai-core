@@ -15,8 +15,7 @@ describe('OllamaClient', () => {
         vi.resetAllMocks();
         client = new OllamaClient({
             apiKey: 'test-api-key',
-            baseURL: 'https://api.example.test',
-            model: 'configured-model'
+            baseURL: 'https://api.example.test'
         });
     });
 
@@ -65,13 +64,13 @@ describe('OllamaClient', () => {
             { role: 'assistant', content: 'Previous response' }
         ];
 
-        const response = await client.respond(messages);
+        const response = await client.respond(messages, { model: 'test-model' });
 
         expect(response).toEqual({
             message: { role: 'assistant', content: 'Done' }
         });
         expect(ollamaMock.chat).toHaveBeenCalledWith({
-            model: 'configured-model',
+            model: 'test-model',
             messages: [
                 { role: 'system', content: 'System instruction', images: undefined },
                 {
@@ -104,17 +103,17 @@ describe('OllamaClient', () => {
         );
         client = new OllamaClient({
             apiKey: 'test-api-key',
-            baseURL: 'https://api.example.test',
-            tools: [tool],
-            model: 'configured-model'
+            baseURL: 'https://api.example.test'
         });
 
-        await client.respond([{ role: 'user', content: 'Look this up' }], {
-            model: 'custom-model'
+        await client.respond([
+            { role: 'user', content: 'Look this up' }
+        ], {
+            model: 'test-model', tools: [tool]
         });
 
         expect(ollamaMock.chat).toHaveBeenCalledWith({
-            model: 'custom-model',
+            model: 'test-model',
             messages: [{ role: 'user', content: 'Look this up', images: undefined }],
             tools: [{
                 type: 'function',
@@ -137,8 +136,7 @@ describe('OllamaClient', () => {
         }));
         const tool = new Tool('lookup', '', { type: 'object' }, call);
         client = new OllamaClient({
-            apiKey: 'test-api-key',
-            tools: [tool]
+            apiKey: 'test-api-key'
         });
         ollamaMock.chat
             .mockResolvedValueOnce({
@@ -156,7 +154,7 @@ describe('OllamaClient', () => {
 
         const response = await client.respond([
             { role: 'user', content: 'Find hello' }
-        ]);
+        ], { tools: [tool] });
 
         expect(response).toEqual({
             message: { role: 'assistant', content: 'The result is here' }
@@ -183,8 +181,7 @@ describe('OllamaClient', () => {
         const error = new Error('Lookup failed');
         const tool = new Tool('lookup', '', { type: 'object' }, async () => { throw error; });
         client = new OllamaClient({
-            apiKey: 'test-api-key',
-            tools: [tool]
+            apiKey: 'test-api-key'
         });
         ollamaMock.chat
             .mockResolvedValueOnce({
@@ -200,7 +197,9 @@ describe('OllamaClient', () => {
                 message: { role: 'assistant', content: 'Could not find it' }
             });
 
-        await client.respond([{ role: 'user', content: 'Look it up' }]);
+        await client.respond([
+            { role: 'user', content: 'Look it up' }
+        ], { tools: [tool] });
 
         expect(ollamaMock.chat.mock.calls[1][0].messages).toContainEqual({
             role: 'tool',

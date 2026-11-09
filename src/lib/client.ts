@@ -6,8 +6,6 @@ import type { Message, Response, ToolDefinition } from './types';
 export type ClientOptions = {
     apiKey: string;
     baseURL?: string;
-    tools?: Tool[];
-    model?: string;
 };
 
 export type RespondOptions = {
@@ -20,34 +18,31 @@ export type RespondOptions = {
 export abstract class AIClient {
     protected _model: string = '';
     protected _tools: Record<string, Tool> = {};
-
-    constructor(model: string = '', tools: Tool[] = []) {
-        this._model = model;
-        this._tools = tools.reduce((acc, tool) => {
-            acc[tool.definition.name] = tool;
-            return acc;
-        }, {} as Record<string, Tool>);
-    }
     
     public get tools(): ToolDefinition[] {
         return Object.values(this._tools).map(tool => tool.definition);
     }
 
-    public set tools(tools: Tool[]) {
-        this._tools = Object.fromEntries(tools.map(t => [t.name, t]));
-    }
-
     // TODO Make a universal return type for models
     public abstract getModels(): Promise<unknown>;
 
-    abstract respond(
+    public respond(
         messages: Message[],
-        options?: RespondOptions
-    ): Promise<Response>;
+        {
+            model = this._model,
+            tools
+        }: RespondOptions = {}
+    ): Promise<Response> {
+        if (tools) {
+            this._tools = Object.fromEntries(tools.map(t => [t.name, t]));
+        }
+
+        return this.loop(model, messages, tools);
+    }
 
     protected abstract loop(
-        messages: Message[],
         model: string,
+        messages: Message[],
         tools?: Tool[]
     ): Promise<Response>;
 

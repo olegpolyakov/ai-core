@@ -9,7 +9,8 @@ import {
     ClientOptions,
     getErrorMessage,
     Message,
-    Response
+    Response,
+    Tool
 } from '../lib';
 
 export default class OllamaClient extends AIClient {
@@ -17,11 +18,9 @@ export default class OllamaClient extends AIClient {
 
     constructor({
         apiKey,
-        baseURL = 'https://ollama.com',
-        tools,
-        model = 'gemma4:31b-cloud'
+        baseURL = 'https://ollama.com'
     }: ClientOptions) {
-        super(model, tools);
+        super();
         this._client = new Ollama({
             host: baseURL,
             headers: {
@@ -34,14 +33,12 @@ export default class OllamaClient extends AIClient {
         return this._client.list();
     }
 
-    async respond(messages: Message[], { model = this._model } = {}): Promise<Response> {
-        return this.loop(messages, model);
-    }
-
-    async loop(messages: Message[], model: string): Promise<Response> {
-        return this._loop(
-            model,
-            messages.map(message => ({
+    async loop(
+        model: string,
+        messages: Message[],
+        tools: Tool[] = []
+    ): Promise<Response> {
+        const ollamaMessages: OllamaMessage[] = messages.map(message => ({
                 role: message.role,
                 content: Array.isArray(message.content)
                     ? message.content.find(item => item.type === 'text')?.content ?? ''
@@ -51,16 +48,17 @@ export default class OllamaClient extends AIClient {
                         .filter(item => item.type === 'image')
                         .map(item => item.url)
                     : undefined
-            })) as OllamaMessage[],
-            Object.values(this._tools).map(({ definition }) => ({
+            }));
+        const ollamaTools: OllamaTool[] = tools.map(t => ({
                 type: 'function' as const,
                 function: {
-                    name: definition.name,
-                    description: definition.description,
-                    parameters: definition.parameters
+                    name: t.name,
+                    description: t.description,
+                    parameters: t.inputSchema
                 }
-            })) as OllamaTool[]
-        );
+            }));
+
+        return this._loop(model, ollamaMessages, ollamaTools);
     }
 
     async _loop(
@@ -76,14 +74,12 @@ export default class OllamaClient extends AIClient {
 
         const toolCalls = response.message.tool_calls ?? [];
 
-        if (toolCalls.length === 0) {
-            return {
-                message: {
-                    role: 'assistant',
-                    content: response.message.content
-                }
-            };
-        }
+        if (toolCalls.length === 0) return {
+            message: {
+                role: 'assistant',
+                content: response.message.content
+            }
+        };
 
         messages.push(response.message);
 

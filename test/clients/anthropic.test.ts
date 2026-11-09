@@ -15,8 +15,7 @@ describe('AnthropicClient', () => {
         vi.resetAllMocks();
         client = new AnthropicClient({
             apiKey: 'test-api-key',
-            baseURL: 'https://api.example.test',
-            model: 'configured-model'
+            baseURL: 'https://api.example.test'
         });
     });
 
@@ -59,13 +58,13 @@ describe('AnthropicClient', () => {
             { role: 'assistant', content: 'Previous response' }
         ];
 
-        const response = await client.respond(messages);
+        const response = await client.respond(messages, { model: 'test-model' });
 
         expect(response).toEqual({
             message: { role: 'assistant', content: 'First part\nSecond part' }
         });
         expect(anthropicMock.create).toHaveBeenCalledWith({
-            model: 'claude-3-5-haiku-20241022',
+            model: 'test-model',
             max_tokens: 1024,
             system: 'System one\nSystem two',
             messages: [
@@ -85,7 +84,7 @@ describe('AnthropicClient', () => {
                 },
                 { role: 'assistant', content: 'Previous response' }
             ],
-            tools: undefined
+            tools: []
         });
     });
 
@@ -105,11 +104,12 @@ describe('AnthropicClient', () => {
         );
         client = new AnthropicClient({
             apiKey: 'test-api-key',
-            baseURL: 'https://api.example.test',
-            tools: [tool]
+            baseURL: 'https://api.example.test'
         });
 
-        await client.respond([{ role: 'user', content: 'Look this up' }], { model: 'custom-model' });
+        await client.respond([
+            { role: 'user', content: 'Look this up' }
+        ], { model: 'custom-model', tools: [tool] });
 
         expect(anthropicMock.create).toHaveBeenLastCalledWith({
             model: 'custom-model',
@@ -134,8 +134,7 @@ describe('AnthropicClient', () => {
         }));
         const tool = new Tool('lookup', '', { type: 'object' }, call);
         client = new AnthropicClient({
-            apiKey: 'test-api-key',
-            tools: [tool]
+            apiKey: 'test-api-key'
         });
         anthropicMock.create
             .mockResolvedValueOnce({
@@ -150,7 +149,7 @@ describe('AnthropicClient', () => {
 
         const response = await client.respond([
             { role: 'user', content: 'Find hello' }
-        ], { model: 'custom-model' });
+        ], { model: 'custom-model', tools: [tool] });
 
         expect(response).toEqual({
             message: { role: 'assistant', content: 'The result is here' }
@@ -184,8 +183,7 @@ describe('AnthropicClient', () => {
         const error = new Error('Lookup failed');
         const tool = new Tool('lookup', '', { type: 'object' }, async () => { throw error; });
         client = new AnthropicClient({
-            apiKey: 'test-api-key',
-            tools: [tool]
+            apiKey: 'test-api-key'
         });
         anthropicMock.create
             .mockResolvedValueOnce({
@@ -195,7 +193,7 @@ describe('AnthropicClient', () => {
                 content: [{ type: 'text', text: 'Could not find it' }]
             });
 
-        await client.respond([{ role: 'user', content: 'Look it up' }]);
+        await client.respond([{ role: 'user', content: 'Look it up' }], { tools: [tool] });
 
         expect(anthropicMock.create.mock.calls[1][0]).toMatchObject({
             messages: expect.arrayContaining([

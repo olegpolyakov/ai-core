@@ -6,7 +6,8 @@ import {
     ClientOptions,
     getErrorMessage,
     Message,
-    Response
+    Response,
+    Tool
 } from '../lib';
 
 export default class AnthropicClient extends AIClient {
@@ -14,11 +15,9 @@ export default class AnthropicClient extends AIClient {
 
     constructor({
         apiKey,
-        baseURL,
-        tools,
-        model
+        baseURL
     }: ClientOptions) {
-        super(model, tools);
+        super();
         this._client = new Anthropic({ apiKey, baseURL });
     }
 
@@ -26,11 +25,11 @@ export default class AnthropicClient extends AIClient {
         return this._client.models.list();
     }
 
-    async respond(messages: Message[], { model = 'claude-3-5-haiku-20241022' } = {}): Promise<Response> {
-        return this.loop(messages, model);
-    }
-
-    async loop(messages: Message[], model: string): Promise<Response> {
+    async loop(
+        model: string,
+        messages: Message[],
+        tools: Tool[] = []
+    ): Promise<Response> {
         const system: string = messages
             .filter(message => message.role === 'system')
             .map(message => message.content)
@@ -68,11 +67,11 @@ export default class AnthropicClient extends AIClient {
                     })
             }));
 
-        const tools: Anthropic.Tool[] = Object.values(this._tools).map(({ definition }) => ({
-            name: definition.name,
-            description: definition.description,
+        const anthropicTools: Anthropic.Tool[] = tools.map(t => ({
+            name: t.name,
+            description: t.description,
             input_schema: {
-                ...definition.parameters,
+                ...t.inputSchema,
                 type: 'object'
             }
         }));
@@ -81,7 +80,7 @@ export default class AnthropicClient extends AIClient {
             model,
             system,
             history,
-            tools
+            anthropicTools
         );
     }
 
@@ -93,10 +92,10 @@ export default class AnthropicClient extends AIClient {
     ): Promise<Response> {
         const response = await this._client.messages.create({
             model,
-            max_tokens: 1024,
             system,
             messages,
-            tools: tools.length > 0 ? tools : undefined
+            tools,
+            max_tokens: 1024,
         });
 
         const toolCalls = response.content.filter(
